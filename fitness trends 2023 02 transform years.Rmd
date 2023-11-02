@@ -1,0 +1,184 @@
+---
+title: "Fit Trends for 2023 (Transform data - years as columns)"
+author: "Julia Wu"
+date: "2023-11-01"
+output: html_document
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Used libraries
+
+```{r load}
+
+library(tidyverse)
+library(kableExtra)
+library(reshape2)
+
+```
+
+## Import cleaned data
+
+```{r import}
+
+df <- read.csv("fitness trends 2023 (cleaned).csv")
+
+df %>% 
+  kable() %>%
+  kable_styling(bootstrap_options= c("striped", "hover")) %>%
+  scroll_box(width="100%", height= "500px")
+
+```
+
+## Transform data
+
+### Initiate a dataframe with default value 0 for all types of training
+
+### Years as Columns
+
+```{r new_frame}
+
+types_all <- as.list(df[, 2:ncol(df)])
+types_uni <- sort(unique(unlist(types_all, recursive=FALSE)))
+
+Types <- c(types_uni)
+new_trends <- data.frame(Types)
+
+new_trends[c(1:18)] <- 0
+new_trends[, 1] <- Types
+
+colnames(new_trends)[2:ncol(new_trends)]<- c(2007:2023)
+
+new_trends %>%
+  kable() %>%
+  kable_styling(bootstrap_options=c("striped", "hover")) %>%
+  scroll_box(width="100%", height="300px")
+
+```
+
+### Convert ranking to popularity in a time series
+
+```{r convert}
+
+for(Type in Types){
+  #print(Type)
+  
+  for(year in 2007:2023){
+    for(rank in colnames(df)[2:ncol(df)]){
+      matches <- df[(df[rank]==Type) & (df['Year']==year), ]
+      
+      if(nrow(matches)>0){
+        #print(matches)
+        
+        index <- which(matches==Type, arr.ind=FALSE)
+        #print(index)
+        
+        popularity <- 12-index
+        #print(popularity)
+        
+        new_trends[new_trends['Types']==Type, as.character(year)] <- popularity
+      }
+    }
+  }
+}
+  
+new_trends %>%
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "hover", "responsive")) %>% 
+  scroll_box(height="300px")
+
+```
+
+### Save as a .csv
+
+```{r save}
+
+write_csv(new_trends, "fitness trends 2023 (transformed_year).csv")
+
+```
+
+### Read from a .csv
+
+```{r read}
+
+trends_con <- read.csv("fitness trends 2023 (transformed_year).csv", check.names=FALSE)
+
+trends_con %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "hover", "responsive")) %>% 
+  scroll_box(height="300px")
+
+```
+
+## Filter interesting data points
+
+### Find popularity of all types of training for recent 5 years
+
+```{r recent}
+
+cols <- c("Types", as.character(c(2019:2023)))
+
+trends_con_recent <- trends_con[, cols]
+
+trends_con_recent %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+  scroll_box(width="100%", height="300px")
+
+```
+
+### Types of training with a total popularity for recent 5 years \> 15, and in 2023 \> 4
+
+```{r top}
+
+trends_con_recent_top <- trends_con_recent[
+  rowSums(trends_con_recent[, 2:ncol(trends_con_recent)], na.rm=TRUE)>15 & 
+  (trends_con_recent['2023']>4), ]
+
+trends_con_recent_top %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+  scroll_box(width="100%")
+
+```
+
+## Melt data and convert data type as needed for time series graph
+
+```{r final}
+
+data_final <- melt(trends_con_recent_top, id.vars='Types')
+data_final$Types <- as.factor(data_final$Types)
+data_final$variable <- as.integer(as.character(data_final$variable))
+
+data_final %>% 
+  kable() %>% 
+  kable_styling(bootstrap_options=c("striped", "hover")) %>% 
+  scroll_box(width="100%", height="300px")
+
+```
+
+## Draw plots
+
+```{r plot}
+
+ggplot(data_final, aes(x=variable, y=value, col=Types))+
+  geom_line()+
+  scale_x_continuous(breaks=pretty(data_final$variable, n=4))+
+  scale_y_continuous(breaks=pretty(data_final$value, n=5))+
+  
+  labs(x="Year", y="Popularity")+
+  ggtitle("Years as Columns")+
+  theme(plot.title=element_text(hjust=0.5))
+
+```
+
+#### \-\--
+
+#### References:
+
+[@thompson2023]

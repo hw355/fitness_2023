@@ -1,0 +1,102 @@
+---
+title: "Fit Trends for 2023 (Clean data)"
+author: "Julia Wu"
+date: "2023-11-01"
+output: html_document
+bibliography: references.bib
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Used libraries
+
+```{r load}
+
+library(tidyverse)
+library(kableExtra)
+
+```
+
+## Import data
+
+```{r import}
+
+trends <- read.csv("fitness trends 2023.csv")
+
+trends %>% 
+  kable() %>%
+  kable_styling(bootstrap_options= c("striped", "hover")) %>%
+  scroll_box(width="100%", height= "500px")
+
+```
+
+## Explore data
+
+```{R explore}
+
+str(trends)
+
+```
+
+## Clean data
+
+### Pascal case
+
+```{r pascal}
+
+Year <-c(2007:2023)
+df <- data.frame(Year)
+
+for (x in 0:9){
+  x <- x+1
+  y <- paste("Rank_", x, sep="")
+  
+  df[[y]] <- c(tools::toTitleCase(tolower(trends[[y]])))
+}
+
+df %>%
+  kable() %>%
+  kable_styling(bootstrap_options=c("striped", "hover")) %>%
+  scroll_box(width="100%", height="500px")
+
+```
+
+### Unified naming
+
+```{r naming}
+
+df[] <- lapply(df, function(x) {gsub(".*Fitness Professional.*", "Employing Certified Fitness Professionals", x)})
+df[] <- lapply(df, function(x) {gsub(".*Fitness Programs for Older Adults", "Fitness Programs for Older Adults", x)})
+df[] <- lapply(df, function(x) {gsub("Exercise and Weight Loss", "Exercise for Weight Loss", x)})
+df[] <- lapply(df, function(x) {gsub("Exercise is Medicine.*", "Exercise is Medicine", x)})
+df[] <- lapply(df, function(x) {gsub("Functional Fitness.*", "Functional Fitness Training", x)})
+
+df[] <- lapply(df, function(x) {gsub("Group Personal Training", "Group Training", x)})
+df[] <- lapply(df, function(x) {gsub("Health/ Wellness Coaching", "Health/Wellness Coaching", x)})
+df[] <- lapply(df, function(x) {gsub("Online Training", "Online Live and on-Demand Exercise Classes", x)})
+df[] <- lapply(df, function(x) {gsub(".*Training with Free Weights", "Strength Training with Free Weights", x)})
+
+df %>%
+  kable() %>%
+  kable_styling(bootstrap_options=c("striped", "hover")) %>%
+  scroll_box(width="100%", height="500px")
+
+```
+
+### Save cleaned data as a .csv
+
+```{r save}
+
+write_csv(df, "fitness trends 2023 (cleaned).csv")
+
+```
+
+#### \-\--
+
+#### References:
+
+[@thompson2023]
